@@ -12,6 +12,13 @@ CROSS JOIN dbo.Nums
 WHERE dbo.Nums.n < 6
 ORDER BY empid, dt
 
+SELECT E.empid,
+  DATEADD(day, D.n - 1, CAST('20160612' AS DATE)) AS dt
+FROM HR.Employees AS E
+  CROSS JOIN dbo.Nums AS D
+WHERE D.n <= DATEDIFF(day, '20160612', '20160616') + 1
+ORDER BY empid, dt;
+
 -- Exercise 2
 SELECT Customers.custid, Customers.companyname, Orders.orderid, Orders.orderdate
 FROM Sales.Customers
