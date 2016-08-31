@@ -3,6 +3,11 @@ SELECT orderid, orderdate, custid, empid
 FROM Sales.Orders
 WHERE orderdate = (SELECT MAX(orderdate) FROM Sales.Orders)
 
+SELECT orderid, orderdate, custid, empid
+FROM Sales.Orders
+WHERE orderdate =
+  (SELECT MAX(O.orderdate) FROM Sales.Orders AS O);
+
 -- Exercise 2
 SELECT custid, orderid, orderdate, empid
 FROM Sales.Orders
@@ -11,6 +16,14 @@ WHERE custid = (SELECT custid
 				GROUP BY custid
 				ORDER BY COUNT(orderid) DESC
 				OFFSET 0 ROW FETCH NEXT 1 ROW ONLY);
+
+SELECT custid, orderid, orderdate, empid
+FROM Sales.Orders
+WHERE custid IN
+  (SELECT TOP (1) WITH TIES O.custid
+   FROM Sales.Orders AS O
+   GROUP BY O.custid
+   ORDER BY COUNT(*) DESC);
 
 SELECT custid, orderid, orderdate, empid
 FROM 
@@ -58,6 +71,11 @@ SELECT DISTINCT country
 FROM Sales.Customers
 WHERE country NOT IN (SELECT country FROM HR.Employees);
 
+SELECT DISTINCT country
+FROM Sales.Customers
+WHERE country NOT IN
+  (SELECT E.country FROM HR.Employees AS E);
+
 SELECT DISTINCT Sales.Customers.country
 FROM Sales.Customers
 LEFT OUTER JOIN HR.Employees
@@ -78,6 +96,14 @@ INNER JOIN
 ORDER BY custid;
 
 SELECT custid, orderid, orderdate, empid
+FROM Sales.Orders AS O1
+WHERE orderdate =
+  (SELECT MAX(O2.orderdate)
+   FROM Sales.Orders AS O2
+   WHERE O2.custid = O1.custid)
+ORDER BY custid;
+
+SELECT custid, orderid, orderdate, empid
 FROM 
 (
 	SELECT custid, orderid, orderdate, empid, MAX(orderdate) OVER (PARTITION BY custid) AS lastorderdate
@@ -91,6 +117,22 @@ SELECT custid, companyname
 FROM Sales.Customers
 WHERE custid IN (SELECT custid FROM Sales.Orders WHERE orderdate BETWEEN '20150101' AND '20151231')
 	AND custid NOT IN (SELECT custid FROM Sales.Orders WHERE orderdate BETWEEN '20160101' AND '20161231');
+
+-- This is a litter faster
+SELECT custid, companyname
+FROM Sales.Customers AS C
+WHERE EXISTS
+  (SELECT *
+   FROM Sales.Orders AS O
+   WHERE O.custid = C.custid
+     AND O.orderdate >= '20150101'
+     AND O.orderdate < '20160101')
+  AND NOT EXISTS
+  (SELECT *
+   FROM Sales.Orders AS O
+   WHERE O.custid = C.custid
+     AND O.orderdate >= '20160101'
+     AND O.orderdate < '20170101');
 
 SELECT DISTINCT Sales.Customers.custid, Sales.Customers.companyname
 FROM Sales.Customers
@@ -117,6 +159,19 @@ WHERE custid IN
 	FROM Sales.Orders
 	WHERE orderid IN (SELECT orderid FROM Sales.OrderDetails WHERE productid = 12	)
 );
+
+SELECT custid, companyname
+FROM Sales.Customers AS C
+WHERE EXISTS
+  (SELECT *
+   FROM Sales.Orders AS O
+   WHERE O.custid = C.custid
+     AND EXISTS
+       (SELECT *
+        FROM Sales.OrderDetails AS OD
+        WHERE OD.orderid = O.orderid
+          AND OD.ProductID = 12));
+
 -- Exercise 8
 SELECT custid, ordermonth, qty, 
 	(
@@ -133,6 +188,8 @@ FROM Sales.CustOrders
 ORDER BY custid, ordermonth;
 
 -- Exercise 9
+
+-- Exercise 10
 SELECT custid, orderdate, orderid, DATEDIFF(DAY, 
 	(
 		SELECT orderdate
