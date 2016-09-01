@@ -13,23 +13,36 @@ FROM
 ) AS T
 WHERE orderdate <> endofyear;
 
+WITH C AS
+(
+  SELECT *,
+    DATEFROMPARTS(YEAR(orderdate), 12, 31) AS endofyear
+  FROM Sales.Orders
+)
+SELECT orderid, orderdate, custid, empid, endofyear
+FROM C
+WHERE orderdate <> endofyear;
+
 -- Exercise 2-1
 SELECT empid, MAX(orderdate) AS maxorderdate
 FROM Sales.Orders
 GROUP BY empid;
 
 -- Exercise 2-2
-SELECT Sales.Orders.empid, Sales.Orders.orderdate, orderid, custid
+SELECT Sales.Orders.empid, orderdate, orderid, custid
 FROM Sales.Orders
 INNER JOIN
 (
 	SELECT empid, MAX(orderdate) AS maxorderdate
 	FROM Sales.Orders
 	GROUP BY empid
-) AS T ON Sales.Orders.empid = T.empid AND Sales.Orders.orderdate = T.maxorderdate;
+) AS T 
+	ON Sales.Orders.empid = T.empid 
+		AND Sales.Orders.orderdate = T.maxorderdate;
 
 -- Exercise 3-1
-SELECT orderid, orderdate, custid, empid, ROW_NUMBER() OVER (ORDER BY orderdate, orderid) AS rownum
+SELECT orderid, orderdate, custid, empid,
+	ROW_NUMBER() OVER (ORDER BY orderdate, orderid) AS rownum
 FROM Sales.Orders;
 
 -- Exercise 3-2
