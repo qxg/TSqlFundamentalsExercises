@@ -1,120 +1,106 @@
 -- Exercise 1
-SELECT 
-FROM 
+SELECT orderid, orderdate, custid, empid,
+  DATEFROMPARTS(YEAR(orderdate), 12, 31) AS endofyear
+FROM Sales.Orders
+WHERE orderdate <> DATEFROMPARTS(YEAR(orderdate), 12, 31);
 
--- Exercise 2
-SELECT 
-FROM 
+SELECT *
+FROM
+(
+	SELECT orderid, orderdate, custid, empid,
+	  DATEFROMPARTS(YEAR(orderdate), 12, 31) AS endofyear
+	FROM Sales.Orders
+) AS T
+WHERE orderdate <> endofyear;
 
--- Exercise 3
-SELECT 
-FROM 
+-- Exercise 2-1
+SELECT empid, MAX(orderdate) AS maxorderdate
+FROM Sales.Orders
+GROUP BY empid;
+
+-- Exercise 2-2
+SELECT Sales.Orders.empid, Sales.Orders.orderdate, orderid, custid
+FROM Sales.Orders
+INNER JOIN
+(
+	SELECT empid, MAX(orderdate) AS maxorderdate
+	FROM Sales.Orders
+	GROUP BY empid
+) AS T ON Sales.Orders.empid = T.empid AND Sales.Orders.orderdate = T.maxorderdate;
+
+-- Exercise 3-1
+SELECT orderid, orderdate, custid, empid, ROW_NUMBER() OVER (ORDER BY orderdate, orderid) AS rownum
+FROM Sales.Orders;
+
+-- Exercise 3-2
+WITH order_rownum AS
+(
+	SELECT orderid, orderdate, custid, empid, ROW_NUMBER() OVER (ORDER BY orderdate, orderid) AS rownum
+	FROM Sales.Orders
+)
+SELECT *
+FROM order_rownum
+WHERE rownum BETWEEN 11 AND 20;
+
+SELECT orderid, orderdate, custid, empid, ROW_NUMBER() OVER (ORDER BY orderdate, orderid) AS rownum
+FROM Sales.Orders
+ORDER BY rownum
+OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;
 
 -- Exercise 4
-SELECT 
-FROM 
+WITH employee_manager AS
+(
+	SELECT empid, mgrid, firstname, lastname
+	FROM HR.Employees
+	WHERE empid = 9
 
--- Exercise 5
-SELECT 
-FROM 
+	UNION ALL
 
--- Exercise 6
-SELECT 
-FROM 
+	SELECT HR.Employees.empid, HR.Employees.mgrid, HR.Employees.firstname, HR.Employees.lastname
+	FROM employee_manager
+	INNER JOIN HR.Employees ON employee_manager.mgrid = HR.Employees.empid
+)
+SELECT *
+FROM employee_manager
 
--- Exercise 7
-SELECT 
-FROM 
+-- Exercise 5-1
+DROP VIEW IF EXISTS Sales.VEmpOrders;
+GO
+CREATE VIEW Sales.VEmpOrders
+AS
+	SELECT empid, YEAR(orderdate) AS orderyear, SUM(qty) AS qty
+	FROM Sales.Orders
+		INNER JOIN Sales.OrderDetails
+			ON Sales.Orders.orderid = Sales.OrderDetails.orderid
+	GROUP BY empid, YEAR(orderdate);
+GO
+SELECT *
+FROM Sales.VEmpOrders
+ORDER BY empid, orderyear;
 
--- Exercise 8
-SELECT 
-FROM 
+-- Exercise 5-2
+SELECT *, SUM(qty) OVER (PARTITION BY empid ORDER BY orderyear) AS runqty
+FROM Sales.VEmpOrders;
 
--- Exercise 9
-SELECT 
-FROM 
+-- Exercise 6-1
+DROP FUNCTION IF EXISTS Production.TopProducts; 
+GO
+CREATE FUNCTION Production.TopProducts
+(
+	@supid AS INT,
+	@n AS INT
+)
+RETURNS TABLE
+	RETURN 
+		SELECT productid, productname, unitprice
+		FROM Production.Products
+		WHERE supplierid = @supid
+		ORDER BY unitprice DESC
+		OFFSET 0 ROW FETCH NEXT @n ROWS ONLY;
+GO
+SELECT * FROM Production.TopProducts(5, 2);
 
--- Exercise 10
-SELECT 
-FROM 
-
--- Exercise 11
-SELECT 
-FROM 
-
--- Exercise 12
-SELECT 
-FROM 
-
--- Exercise 13
-SELECT 
-FROM 
-
--- Exercise 14
-SELECT 
-FROM 
-
--- Exercise 15
-SELECT 
-FROM 
-
--- Exercise 16
-SELECT 
-FROM 
-
--- Exercise 17
-SELECT 
-FROM 
-
--- Exercise 18
-SELECT 
-FROM 
-
--- Exercise 19
-SELECT 
-FROM 
-
--- Exercise 20
-SELECT 
-FROM 
-
--- Exercise 21
-SELECT 
-FROM 
-
--- Exercise 22
-SELECT 
-FROM 
-
--- Exercise 23
-SELECT 
-FROM 
-
--- Exercise 24
-SELECT 
-FROM 
-
--- Exercise 25
-SELECT 
-FROM 
-
--- Exercise 26
-SELECT 
-FROM 
-
--- Exercise 27
-SELECT 
-FROM 
-
--- Exercise 28
-SELECT 
-FROM 
-
--- Exercise 29
-SELECT 
-FROM 
-
--- Exercise 30
-SELECT 
-FROM 
-
+-- Exercise 6-2
+SELECT S.supplierid, S.companyname, TP.*
+FROM Production.Suppliers AS S
+CROSS APPLY Production.TopProducts(S.supplierid, 2) AS TP
