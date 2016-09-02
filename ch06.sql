@@ -1,26 +1,51 @@
 -- Exercise 1
-SELECT 
-FROM 
 
 -- Exercise 2
-SELECT 
-FROM 
+SELECT *
+FROM (VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10)) T(n)
 
 -- Exercise 3
-SELECT 
-FROM 
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20160101' AND '20160131'
+EXCEPT
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20160201' AND '20160229';
 
 -- Exercise 4
-SELECT 
-FROM 
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20160101' AND '20160131'
+INTERSECT
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20160201' AND '20160229';
 
 -- Exercise 5
-SELECT 
-FROM 
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20160101' AND '20160131'
+INTERSECT
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20160201' AND '20160229'
+EXCEPT
+SELECT custid, empid
+FROM Sales.Orders
+WHERE orderdate BETWEEN '20150101' AND '20151231';
 
 -- Exercise 6
-SELECT 
+SELECT country, region, city
 FROM 
+(
+	SELECT country, region, city, 0 AS segment
+	FROM HR.Employees
+	UNION ALL
+	SELECT country, region, city, 1 as segment
+	FROM Production.Suppliers
+) AS T
+ORDER BY segment, country, region, city
 
 -- Exercise 7
 SELECT 
