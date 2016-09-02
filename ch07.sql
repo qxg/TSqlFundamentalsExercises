@@ -43,6 +43,14 @@ SELECT val, RANK() OVER(ORDER BY val) AS rownum
 FROM Sales.OrderValues
 GROUP BY val;
 
+WITH C AS
+(
+  SELECT DISTINCT val
+  FROM Sales.OrderValues
+)
+SELECT val, ROW_NUMBER() OVER(ORDER BY val) AS rownum
+FROM C;
+
 -- Exercise 3
 SELECT custid, orderid, qty,
 	qty	- LAG(qty) OVER (PARTITION BY custid ORDER BY orderdate) AS diffprev,
@@ -54,12 +62,12 @@ ORDER BY custid, orderdate;
 SELECT empid, [2014] AS cnt2014, [2015] as cnt2015, [2016] as cnt2016
 FROM 
 (
-	SELECT empid, orderid, YEAR(orderdate) AS orderyear
+	SELECT empid, YEAR(orderdate) AS orderyear
 	FROM dbo.Orders
 ) AS S
 PIVOT
 (
-	COUNT(orderid) FOR orderyear IN ([2014], [2015], [2016])
+	COUNT(orderyear) FOR orderyear IN ([2014], [2015], [2016])
 ) AS P
 ORDER by empid;
 
