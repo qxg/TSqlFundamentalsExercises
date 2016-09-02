@@ -13,13 +13,21 @@ CREATE TABLE dbo.Customers
 
 -- Exercise 1-1
 INSERT INTO dbo.Customers(custid, companyname, country, region, city)
-VALUES(100, 'Coho Winery', 'USA', 'WA', 'Redmond')
+VALUES(100, N'Coho Winery', N'USA', N'WA', N'Redmond')
 
 -- Exercise 1-2
 INSERT INTO dbo.Customers
 SELECT custid, companyname, country, region, city
 FROM Sales.Customers
 WHERE custid IN (SELECT custid FROM Sales.Orders)
+
+-- What if Sales.Customer.custid IS NULL
+INSERT INTO dbo.Customers(custid, companyname, country, region, city)
+  SELECT custid, companyname, country, region, city
+  FROM Sales.Customers AS C
+  WHERE EXISTS
+    (SELECT * FROM Sales.Orders AS O
+     WHERE O.custid = C.custid);
 
 -- Exercise 1-3
 DROP TABLE IF EXISTS dbo.Orders;
@@ -40,6 +48,11 @@ FROM dbo.Orders AS O
 INNER JOIN Sales.Customers AS C ON o.custid = C.custid
 WHERE C.country = 'Brazil';
 
+MERGE INTO dbo.Orders AS O
+USING (SELECT * FROM dbo.Customers WHERE country = N'Brazil') AS C
+  ON O.custid = C.custid
+WHEN MATCHED THEN DELETE;
+
 -- Exercise 4
 SELECT * FROM dbo.Customers;
 
@@ -56,7 +69,15 @@ SET O.shipcountry = C.country,
 FROM dbo.Orders AS O
 INNER JOIN Sales.Customers AS C
 	ON O.custid = C.custid
-WHERE C.country = 'UK'
+WHERE C.country = 'UK';
+
+MERGE INTO dbo.Orders AS O
+USING (SELECT * FROM dbo.Customers WHERE country = N'UK') AS C
+  ON O.custid = C.custid
+WHEN MATCHED THEN
+  UPDATE SET shipcountry = C.country,
+             shipregion = C.region,
+             shipcity = C.city;
 
 -- Exercise 6
 USE TSQLV4;
@@ -105,8 +126,20 @@ GO
 INSERT INTO dbo.Orders SELECT * FROM Sales.Orders;
 INSERT INTO dbo.OrderDetails SELECT * FROM Sales.OrderDetails;
 
+-- My answer
 TRUNCATE TABLE dbo.OrderDetails;
 DELETE dbo.Orders;
+-- My answer end
+
+-- Solution
+ALTER TABLE dbo.OrderDetails DROP CONSTRAINT FK_OrderDetails_Orders;
+
+TRUNCATE TABLE dbo.OrderDetails;
+TRUNCATE TABLE dbo.Orders;
+
+ALTER TABLE dbo.OrderDetails ADD CONSTRAINT FK_OrderDetails_Orders
+  FOREIGN KEY(orderid) REFERENCES dbo.Orders(orderid);
+-- Solution end
 
 SELECT * FROM dbo.Orders;
 SELECT * FROM dbo.OrderDetails;
